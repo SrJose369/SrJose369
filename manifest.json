@@ -1,0 +1,24 @@
+{
+  "manifest_version": 2,
+  "name": "Test",
+  "description": "Test script",
+  "version": "1.1",
+  "icons": {
+    "128": "image.png"
+  },
+  "content_scripts": [
+    {
+    "matches": ["<all_urls>"],
+    "js": ["content.js"]
+    }
+  ],
+  "externally_connectable": {
+    "matches":["https://*.twitch.tv/*","https://*.youtube.com/*"]
+  },
+  "permissions": ["tabs", "https://*.twitch.tv/*","https://*.youtube.com/*", "bookmarks", "storage"],
+  "browser_action": {
+    "default_icon": "image.png",
+    "default_title": "Chrome Extension test",
+    "default_popup": "popup.html"
+  }
+}

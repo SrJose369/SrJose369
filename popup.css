@@ -1,0 +1,76 @@
+h1 {
+    border: solid rgb(13, 151, 110) 0px;
+    font-size: 18px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+h2 {
+    color: rgb(141, 43, 197);
+    border: solid rgb(212, 255, 0) 0px;
+    font-size: 16px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    margin-right: 40px;
+    float: left;
+}
+h3 {
+    margin-top: 1px;
+    margin-bottom: 1px;
+    color: rgb(13, 137, 194);
+    border: solid rgb(56, 58, 46) 0px;
+}
+#cont, #fini, #refreData {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+#cont, #fini {
+    margin-right: 8px;
+}
+#dateC, #tiemC {
+    margin-top: 0px;
+}
+#tiemC {
+    color: rgb(189, 98, 14);
+}
+#date, #tiem, #canal {
+    margin-top: -5px;
+    margin-bottom: 0px;
+}
+#estadoBok {
+    margin-left: 10px;
+    color: rgb(5, 112, 5);
+    margin-top: 1px;
+}
+#divTitle {
+    border: solid rgb(122, 218, 241) 0px;
+}
+#divBoto {
+    display: flex;
+    border: solid rgb(185, 34, 34) 0px;
+    height: 25px;
+}
+#divDatos {
+    border: solid rgb(28, 55, 204) 0px;
+    display: flex;
+}
+#refrecont {
+    border: solid rgb(92, 80, 14) 0px;
+    color: rgb(12, 9, 196);
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    display: flex;
+}
+#contList {
+    border: solid rgb(0, 0, 0) 1px;
+    width: 668px;
+    position: relative;
+    left: -73px;
+}
+#verB {
+    color:rgb(0, 124, 0);
+}
+#vB {
+    border: solid rgb(167, 18, 197) 0px;
+}
