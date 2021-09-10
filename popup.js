@@ -79,11 +79,14 @@ async function checkRecentBok(cualStreamers) {
         nom1 = "Lely";
         nom2 = "Rubius";
     }
+    let a1, a2;
     try {
-        await getBokLastContFinish(actS1, nom1, "streamer1");
-        await getBokLastContFinish(actS2, nom2, "streamer2");
+        a1 = await getBokLastContFinish(actS1, nom1, "streamer1");
+        a2 = await getBokLastContFinish(actS2, nom2, "streamer2");
     } catch (e) {
         console.warn(e);
+    }
+    if (a1 === false || a2 === false) {
         bol = false;
     }
     return bol;
@@ -98,21 +101,23 @@ async function getBokLastContFinish(cual, nom, elem) {
     if (checkNull(elem)) {
         console.log('Error nom vacio');
     }
+    let bolu = true;
     try {
         ac = await getBokChild(cual.IDcontinuar);
-        af = await getBokChild(cual.IDfinish);    
-        console.log(ac);
-        console.log(af);
-        if (ac.id > af.id) {
-            x = `<span style="color: green";>C</span> ` + ac.title;
+        af = await getBokChild(cual.IDfinish);
+        if (parseInt(ac.id) > parseInt(af.id)) {
+            x = `<span style="color: green";>C</span> ` + '<a href='+ac.url+
+            ' style="color: blue">'+ac.title+'</a>';
         } else {
             x = `<span style="color: red";>F</span> ` + af.title;
         }
         document.getElementById(elem).innerHTML = nom + " " + x;
     } catch (e) {
+        bolu = false;
         console.warn(e);
         document.getElementById("streamer1").innerHTML = "Err";
     }
+    return bolu;
 }
 async function getBokChild(id) {
     if (checkNull(id)) {
@@ -205,8 +210,8 @@ function actDate() {
     let date;
     let d;
     try {
-        d = ""+date.getFullYear();
         date = new Date();
+        d = ""+date.getFullYear();
         a = ""+date.getMonth() + 1;
         d = d + "-" + fromTxt(a);
         a = ""+date.getDate();
@@ -229,8 +234,7 @@ function getData(cont_O_finish) {
     let xtit = "?";
     let xcan = "?";
     if (checkNull(actualRequest)) {
-        msg("Vacio actualRequest " + actualRequest);
-        return;
+        console.log("Vacio actualRequest " + actualRequest);
     }
     try {
         xtit = actualRequest.titu;
@@ -347,9 +351,6 @@ var actData = {
     titulo: "3",
     url: "aasd",
 };
-function msg(m) {
-    console.log(m);
-}
 function request(m) {
     try {
         chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
