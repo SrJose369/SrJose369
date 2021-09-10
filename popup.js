@@ -8,9 +8,12 @@ document.addEventListener("DOMContentLoaded", function () {
         chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
             let ta = tabs[0];
             urlVideo = ta.url;
+            if (checkNull(urlVideo)) {
+                console.log('Error el url vacio');
+            }
         });
-    } catch (error) {
-        console.log(error);
+    } catch (e) {
+        console.log(e);
     }
     setTimeout(() => {
         getData(true);
@@ -19,7 +22,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 function continuarBok() {
     getData(true);
-    //findBok();
     actualStreamer.continuar();
 }
 function finishBok() {
@@ -62,12 +64,16 @@ async function checkRecentBok(cualStreamers) {
     let bol = true;
     let actS1, actS2;
     let nom1, nom2;
+    if (checkNull(cualStreamers)) {
+        console.log('Error cualStreamers vacio');
+        cualStreamers = "Willy";
+    }
     if (cualStreamers === "Willy") {
         actS1 = willy;
         actS2 = vege;
         nom1 = "Willy";
         nom2 = "Vege";
-    } else {
+    }else {
         actS1 = lely;
         actS2 = rubius;
         nom1 = "Lely";
@@ -83,30 +89,70 @@ async function checkRecentBok(cualStreamers) {
     return bol;
 }
 async function getBokLastContFinish(cual, nom, elem) {
-    ac = await getBokChild(cual.IDcontinuar);
-    af = await getBokChild(cual.IDfinish);
-    console.log(ac);
-    console.log(af);
-    if (ac.id > af.id) {
-        x = `<span style="color: green";>C</span> ` + ac.title;
-    } else {
-        x = `<span style="color: red";>F</span> ` + af.title;
+    if (checkNull(cual)) {
+        console.log('Error cual vacio');
     }
-    document.getElementById(elem).innerHTML = nom + " " + x;
+    if (checkNull(nom)) {
+        console.log('Error nom vacio');
+    }
+    if (checkNull(elem)) {
+        console.log('Error nom vacio');
+    }
+    try {
+        ac = await getBokChild(cual.IDcontinuar);
+        af = await getBokChild(cual.IDfinish);    
+        console.log(ac);
+        console.log(af);
+        if (ac.id > af.id) {
+            x = `<span style="color: green";>C</span> ` + ac.title;
+        } else {
+            x = `<span style="color: red";>F</span> ` + af.title;
+        }
+        document.getElementById(elem).innerHTML = nom + " " + x;
+    } catch (e) {
+        console.warn(e);
+        document.getElementById("streamer1").innerHTML = "Err";
+    }
 }
 async function getBokChild(id) {
-    let bok = await getBokChildrenAsync(id);
-    return bok[bok.length - 1];
+    if (checkNull(id)) {
+        console.log('Error id vacio');
+    }
+    let bok;
+    try {
+        bok = await getBokChildrenAsync(id);
+        bok = bok[bok.length - 1];
+    } catch (e) {
+        console.warn(e);
+    }
+    return bok;
 }
 function getBokChildrenAsync(id) {
-    return new Promise(function (callb, reject) {
-        chrome.bookmarks.getChildren(id, callb);
-    });
+    if (checkNull(id)) {
+        console.log('Error id vacio');
+    }
+    let prom;
+    try {
+        prom = new Promise(function (callb, reject) {
+            chrome.bookmarks.getChildren(id, callb);
+        });
+    } catch (e) {
+        console.warn(e);
+    }
+    return prom;
 }
 function findbokInTree(bok) {
-    let i,
-        x = null;
+    let i, x = null;
+    if (checkNull(bok)) {
+        console.log('Error bok vacio');
+    }
     let unv = bok[0].children;
+    try { 
+        unv = bok[0].children;
+    } catch (e) {
+        console.warn(e);
+        return x;
+    }
     for (i = unv.length - 1; i >= 0; i--) {
         if (unv[i].url == urlVideo) {
             x = unv[i];
@@ -117,43 +163,63 @@ function findbokInTree(bok) {
 }
 function checkBokContinuar(bok) {
     let bol = true;
-    if (bok === null) {
+    if (bok === undefined) {
+        console.log('Error bok vacio');
+    }
+    if (bok === null) { // si bok es null es porque no encontre el bookmark, ose que
+        // toadavia no se guardo un continuar
         bol = false;
     }
-    if (bol == true) {
-        document.getElementById("cont").innerText = "Resfresh Continuar";
-        document.getElementById("dateC").innerText = "" + bok.title.substring(0, 19);
-        document.getElementById("tiemC").innerText = "" + bok.title.substring(19, 29) + " (" + bok.id + ")";
-        document.getElementById("estadoBok").innerText = "Tiene un punto de continuar";
-        IDbokcontinuar = bok.id;
-    } else {
-        document.getElementById("cont").innerText = "Add Continuar";
+    try {
+        if (bol == true) {
+            document.getElementById("cont").innerText = "Resfresh Continuar";
+            document.getElementById("dateC").innerText = ""+bok.title.substring(0, 19);
+            document.getElementById("tiemC").innerText = ""+bok.title.substring(19, 29)+" ("+bok.id+")";
+            document.getElementById("estadoBok").innerText = "Tiene un punto de continuar";
+            IDbokcontinuar = bok.id; // el id del bookmark donde se quedo el video
+        } else {
+            document.getElementById("cont").innerText = "Add Continuar";
+        }
+    } catch(e) {
+        console.warn(e);
     }
     refreshBokConti = bol;
 }
 function checkBokFinish(bok) {
-    if (bok !== null) {
+    if (bok !== null) { // si bok es null no se encontro el bookmark, osea que el video
+        // todavia no se finalizo
         document.getElementById("estadoBok").innerText = "---!!!Video finalizado!!!---";
     }
 }
 function refrescar() {
     let da = actDate();
-    document.getElementById("date").innerText = da;
+    try {
+        da = actDate();
+        document.getElementById("date").innerText = da;
+    } catch (e) {
+        console.warn(e);
+    }
 }
 function actDate() {
     let a;
-    let date = new Date();
-    let d = ""+date.getFullYear();
-    a = ""+date.getMonth() + 1;
-    d = d + "-" + fromTxt(a);
-    a = ""+date.getDate();
-    d = d + "-" + fromTxt(a);
-    a = ""+date.getHours();
-    d = d + " " + fromTxt(a);
-    a = ""+date.getMinutes();
-    d = d + "_" + fromTxt(a);
-    a = ""+date.getSeconds();
-    d = d + "_" + fromTxt(a);
+    let date;
+    let d;
+    try {
+        d = ""+date.getFullYear();
+        date = new Date();
+        a = ""+date.getMonth() + 1;
+        d = d + "-" + fromTxt(a);
+        a = ""+date.getDate();
+        d = d + "-" + fromTxt(a);
+        a = ""+date.getHours();
+        d = d + " " + fromTxt(a);
+        a = ""+date.getMinutes();
+        d = d + "_" + fromTxt(a);
+        a = ""+date.getSeconds();
+        d = d + "_" + fromTxt(a);
+    } catch (e) {
+        console.warn(e);
+    }
     return d;
 }
 function getData(cont_O_finish) {
@@ -162,14 +228,18 @@ function getData(cont_O_finish) {
     let xtie = "?";
     let xtit = "?";
     let xcan = "?";
-    if (!actualRequest) {
+    if (checkNull(actualRequest)) {
         msg("Vacio actualRequest " + actualRequest);
         return;
-    } else {
+    }
+    try {
         xtit = actualRequest.titu;
         xtie = actualRequest.tiem;
         xcan = actualRequest.canal;
+    } catch (e) {
+        console.warn(e);
     }
+    
     document.getElementById("titulo").innerText = xtit;
     document.getElementById("tiem").innerText = xtie;
     document.getElementById("canal").innerText = xcan;
@@ -196,8 +266,15 @@ function getData(cont_O_finish) {
     } else {
         aux = actDate() + " " + xtit;
     }
-    actData.titulo = aux;
-    actData.url = urlVideo;
+    if (checkNull(actData)) {
+        console.log('Error acDtata vacio');
+    }
+    try {
+        actData.titulo = aux;
+        actData.url = urlVideo;
+    } catch (error) {
+        
+    }
 }
 class Streamer {
     constructor(contin, finis) {
@@ -205,18 +282,30 @@ class Streamer {
         this.IDfinish = finis;
     }
     continuar() {
-        if (refreshBokConti == false) {
-            crearBok(this.IDcontinuar, actData.titulo, actData.url);
-        } else {
-            chrome.bookmarks.update(IDbokcontinuar, {title: actData.titulo});
+        try {
+            if (refreshBokConti == false) {
+                crearBok(this.IDcontinuar, actData.titulo, actData.url);
+            } else {
+                chrome.bookmarks.update(IDbokcontinuar, {title: actData.titulo});
+            }
+        }catch (e) {
+            console.warn(e);
         }
     }
     finish() {
-        crearBok(this.IDfinish, actData.titulo, actData.url);
+        try {
+            crearBok(this.IDfinish, actData.titulo, actData.url);
+        }catch (e) {
+            console.warn(e);
+        }
     }
 }
 function crearBok(id, tit, ur) {
-    chrome.bookmarks.create({parentId: id, title: tit, url: ur});
+    try {
+        chrome.bookmarks.create({parentId: id, title: tit, url: ur});
+    } catch (e) {
+        console.warn(e);
+    }
 }
 const rubius = new Streamer("203", "155");
 const lely = new Streamer("88", "14");
@@ -262,12 +351,23 @@ function msg(m) {
     console.log(m);
 }
 function request(m) {
-    chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
-        var acT = tabs[0];
-        chrome.tabs.sendMessage(acT.id, {txt: m}, function (ped) {
-            actualRequest = ped;
+    try {
+        chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
+            var acT = tabs[0];
+            chrome.tabs.sendMessage(acT.id, {txt: m}, function (ped) {
+                actualRequest = ped;
+            });
         });
-    });
+    } catch (e) {
+        console.warn(e);
+    }
+}
+function checkNull(valor) {
+    if (valor === undefined || valor === null) {
+        return true;
+    }else {
+        return false;
+    }
 }
 function formatTi(x) {
     // 00_13_23
@@ -306,9 +406,13 @@ function dumpBookmarks() {
     } else {
         ok = true;
     }
-    chrome.bookmarks.getTree(function (bookmarkTreeNodes) {
-        $("#vB").append(dumpTreeNodes(bookmarkTreeNodes));
-    });
+    try {
+        chrome.bookmarks.getTree(function (bookmarkTreeNodes) {
+            $("#vB").append(dumpTreeNodes(bookmarkTreeNodes));
+        });
+    } catch (e) {
+        console.warn(e);
+    }
 }
 function dumpTreeNodes(bookmarkNodes) {
     var list = $("<ul>");

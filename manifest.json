@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Test",
-  "description": "Test script",
-  "version": "1.1",
+  "name": "Continue",
+  "description": "Continuar Videos",
+  "version": "1.3",
   "icons": {
     "128": "image.png"
   },
