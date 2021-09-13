@@ -1,14 +1,15 @@
-console.log("Hola2");
 var titu;
 var tiem;
 var canal;
 var cual = document.URL;
 function refre() {
-    var a, b, c;
+    let a;
+    let b;
+    let c;
     try {
         if (checkNull(cual) || checkNull(cual.length)) {
             console.log("Error cual vacio");
-        }else {
+        } else {
             if (cual.length < 13) {
                 console.log('Error el length de cual es menor a 13');
             }
@@ -17,7 +18,7 @@ function refre() {
         console.warn(error);
     }
     try {
-        if (cual[12] == "y") {
+        if (cual[12] === "y") {
             msjConsola("Yotubue creo");
             // tiempo video
             a = document.querySelector("#movie_player > div.ytp-chrome-bottom > div.ytp-chrome-controls > div.ytp-left-controls > div.ytp-time-display.notranslate > span.ytp-time-current");
@@ -25,8 +26,8 @@ function refre() {
             b = document.querySelector("#text > a");
             // titulo
             c = document.querySelector("#container > h1 > yt-formatted-string");
-        }else {
-            if (cual[12] == "t") {
+        } else {
+            if (cual[12] === "t") {
                 msjConsola("Twitch creo");
                 // tiempo directo
                 a = document.querySelectorAll('[data-a-target="player-seekbar-current-time"]')[0];
@@ -34,20 +35,21 @@ function refre() {
                 b = document.getElementsByClassName("CoreText-sc-cpl358-0 ScTitleText-sc-1gsen4-0 cWnsFT InjectLayout-sc-588ddc-0 fwsYSr tw-title")[0];
                 // titulo video
                 c = document.querySelectorAll('[data-a-target="stream-title"]')[0];
-            }else {
-                msjConsola("No es youtbe y tampoco twitch :/");;
+            } else {
+                msjConsola("No es youtbe y tampoco twitch :/");
             }
         }
     } catch (error) {
         console.warn(error);
     }
-    var xtie, xcan, xtit;
+    let xtie;
+    let xcan;
+    let xtit;
     try {
         if (checkNull(a) || checkNull(a.innerText)) {
             msjConsola("String vacio tiempo" + a);
             xtie = "?";
-        }
-        else {
+        } else {
             xtie = a.innerText;
         }
     } catch (error) {
@@ -58,10 +60,9 @@ function refre() {
         if (checkNull(b) || checkNull(b.innerText)) {
             msjConsola("String vacio canal" + b);
             xcan = "?";
-        }
-        else {
+        } else {
             xcan = b.innerText;
-        }   
+        }
     } catch (error) {
         msjConsola("String error vacio canal" + b);
         xcan = "?";
@@ -70,14 +71,12 @@ function refre() {
         if (checkNull(c) || checkNull(c.innerText)) {
             msjConsola("String vacio titulo" + c);
             xtit = "?";
-        }
-        else {
+        } else {
             xtit = c.innerText;
         }
     } catch (error) {
         msjConsola("String error vacio titulo" + c);
         xtit = "?";
-
     }
     titu = xtit;
     tiem = xtie;
@@ -87,15 +86,15 @@ chrome.runtime.onMessage.addListener(function (res, sender, sendResponse) {
     try {
         if (checkNull(res) || checkNull(res.txt)) {
             msjConsola("Error en el paquete recibido en content");
-        }else {
+        } else {
             console.log(res.txt);
-            if (res.txt == "refresh") {
-               refre();
+            if (res.txt === "refresh") {
+                refre();
             }
-            sendResponse({titu: titu, tiem: tiem, canal: canal});   
+            sendResponse({titu, tiem, canal});
         }
     } catch (error) {
-       console.warn(error);
+        console.warn(error);
     }
 });
 function msjConsola(m) {
@@ -104,7 +103,6 @@ function msjConsola(m) {
 function checkNull(valor) {
     if (valor === undefined || valor === null) {
         return true;
-    }else {
-        return false;
     }
+    return false;
 }

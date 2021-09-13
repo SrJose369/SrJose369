@@ -1,4 +1,90 @@
-document.addEventListener("DOMContentLoaded", function () {
+/**
+ * true para actualizar el bookmark que deberia ser IDbokcontinuar
+ * false para crear un nuevo bookmark continuar
+ */
+var refreshBokConti = false;
+/**
+ * El streamer actual, del cual necesito el id de la carpeta continuar y finish
+ */
+var actualStreamer;
+/**
+ * URL del video actual
+ */
+var urlVideo;
+/**
+ * El id del bookmark continuar, osea el bookmark que se guardo que tiene la informacion
+ * de donde se dejo el video, porque si quiero actualizar el bookmark porque avanze en el
+ * video solo necesito el id de ese bookmark
+ */
+var IDbokcontinuar;
+/**
+ * Informacion del video actual que me dio el pedido, osea lo que me devolvio
+ * el content.js al hacerle el request
+ */
+var actualRequest;
+var listaEnPantalla = false;
+var youOtwitch = null;
+/**
+ * La informacion que me dio content sobre la pagina, que deberia ser la informacion
+ * del video
+ */
+var actData = {
+    titulo: "*?",
+    url: "+?",
+};
+/**
+ * Clase streamer que guarda la info de los folder de los bookmarks
+ */
+class Streamer {
+    constructor(nom, contin, nomCont, finis, nomFinis, grou) {
+        this.nombre = nom;
+        this.IDcontinuar = contin;
+        this.nameContinuar = nomCont;
+        this.IDfinish = finis;
+        this.nameFinish = nomFinis;
+        this.group = grou;
+    }
+
+    continuar() {
+        try {
+            if (refreshBokConti === false) {
+                crearBok(this.IDcontinuar, actData.titulo, actData.url);
+            } else {
+                chrome.bookmarks.update(IDbokcontinuar, {title: actData.titulo});
+            }
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+
+    finish() {
+        try {
+            crearBok(this.IDfinish, actData.titulo, actData.url);
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+}
+//  Nombre  -  IDcontinuar  -  NombreContinuar  -  IDfinish  -  NombreFinish  -  Grupo
+/**
+ * Informacion sobre willy 9 carpeta principal
+ */
+const willy = new Streamer("Willy", "111", "Viendo", "114", "WFinish 2021-06-05 20_18_39", "Y");
+/**
+ * Informacion sobre vege 90 carpeta principal
+ */
+const vege = new Streamer("Vege", "95", "Viendo", "97", "VFinish 2021-06-05 20_18_39", "Y");
+/**
+ * Informacion sobre rubius
+ */
+const rubius = new Streamer("Rubius", "203", "2021", "155", "Finish", "T");
+/**
+ * Informacion sobre lely
+ */
+const lely = new Streamer("Lely", "88", "2021", "14", "Finish", "T");
+// eslint-disable-next-line no-unused-vars
+const listStreamers = [willy, vege, rubius, lely];
+document.addEventListener("DOMContentLoaded", () => {
     try {
         getData(true);
         document.getElementById("cont").addEventListener("click", continuarBok);
@@ -6,7 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("refreData").addEventListener("click", getData);
         document.getElementById("verB").addEventListener("click", dumpBookmarks);
         chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
-            let ta = tabs[0];
+            const ta = tabs[0];
             urlVideo = ta.url;
             if (checkNull(urlVideo)) {
                 console.log('Error el url vacio');
@@ -16,70 +102,233 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log(e);
     }
     setTimeout(() => {
-        getData(true);
+        console.clear();
+        let bol = false;
+        if (checkNull(urlVideo)) {
+            if (checkNull(urlVideo.length) && urlVideo.length > 13) {
+                if (urlVideo[12] === "y" || urlVideo[12] === "t") {
+                    getData(true);
+                    bol = true;
+                }
+            }
+        }
+        if (bol === false) {
+            urlVideo = "?";
+        }
         checkExistBok();
     }, 600);
 });
+/**
+ * Funcion que se llama cunado se presiona el boton de continuar,
+ * se obtienen los datos y depues se guarda el punto de continuar
+ */
 function continuarBok() {
     getData(true);
     actualStreamer.continuar();
 }
+/**
+ * Funcion que se llama cunado se presiona el boton de continuar,
+ * se obtienen los datos y depues se guarda el punto de continuar
+ */
 function finishBok() {
     getData(false);
     actualStreamer.finish();
 }
+/**
+ * Buscar si estan los bookmarks de continuar o finish para saber si ya se termino de ver el video,
+ * y tambien para saber que fue lo ultimo que se vio o lo ultimo que se hizo
+ */
 async function checkExistBok() {
-    let ok = await checkRecentBok("Willy"); // true, encontro los bookmarks de wiily y vegeta
-    if (ok === false) {
-        ok = await checkRecentBok("Lely");
-        if (ok === false) {
-            try {
-                chrome.bookmarks.getRecent(2, function (bok) {
-                    document.getElementById("streamer1").innerText = "Recent1 " + bok[0].title;
-                    document.getElementById("streamer2").innerText = "Recent2 " + bok[1].title;
-                });
-            } catch (e) {
-                console.warn(e);
-            }
-        }
-    }
+    let foundBok;
     try {
-        chrome.bookmarks.getSubTree(actualStreamer.IDcontinuar, function (bok) {
-            let x = findbokInTree(bok);
-            checkBokContinuar(x);
-        });
+        await isYoutube_o_Twitch();
     } catch (e) {
         console.warn(e);
     }
+    console.log(youOtwitch);
+    if (youOtwitch === "Y") {
+        foundBok = await checkRecentBok("Willy"); // true, encontro los bookmarks de wiily y vegeta
+    }
+    if (youOtwitch === "T") {
+        foundBok = await checkRecentBok("Lely");
+    }
+    if (youOtwitch !== "Y" && youOtwitch !== "T") {
+        foundBok = await checkRecentBok("Willy");
+        if (foundBok === false) {
+            foundBok = await checkRecentBok("Lely");
+            if (foundBok === false) {
+                try {
+                    chrome.bookmarks.getRecent(2, (bok) => {
+                        document.getElementById("streamer1").innerText = "Recent1 " + bok[0].title;
+                        document.getElementById("streamer2").innerText = "Recent2 " + bok[1].title;
+                    });
+                } catch (e) {
+                    console.warn(e);
+                }
+            }
+        }
+    }
+    if (urlVideo !== "?") {
+        checkVideoFinish_o_Cont();
+    }
+}
+/**
+ * Tratar de saber si estamos en youtube o twitch, (osea el perfil, vegetita(youtube) o
+ * twitch369(tiwtch)), en la variable youOtwitch se pone Y o T
+ */
+async function isYoutube_o_Twitch() {
     try {
-        chrome.bookmarks.getSubTree(actualStreamer.IDfinish, function (bok) {
-            let x = findbokInTree(bok);
-            checkBokFinish(x);
+        await new Promise(function (callb) {
+            chrome.bookmarks.getTree(function (bok) {
+                let i;
+                let willyfound = false;
+                let vegefound = false;
+                let rubiusfound = false;
+                let lelyfound = false;
+                const v = bok[0].children[0].children;
+                // Agarro la barra de bookmarks, y me fijo si estan las carpetas de (Willy y Vege)
+                // o (Rubius y Lely), pero esas son las carpetas principales necesito fijarme
+                // si adentro de esas carpetas estan las carpetas de Continuar - Finish
+                for (i = 0; i < v.length; i+=1) {
+                    if (youOtwitch !== "T") {
+                        if (willyfound === false) {
+                            willyfound = findMainFolder(v[i], willy, "Y");
+                        }
+                        if (vegefound === false) {
+                            vegefound = findMainFolder(v[i], vege, "Y");
+                        }
+                        if (willyfound === true && vegefound === true) {
+                            console.log("Se llego al final Y i "+i+" v "+v.length);
+                            break;
+                        }
+                    }
+                    if (youOtwitch !== "Y") {
+                        if (rubiusfound === false) {
+                            rubiusfound = findMainFolder(v[i], rubius, "T");
+                        }
+                        if (lelyfound === false) {
+                            lelyfound = findMainFolder(v[i], lely, "T");
+                        }
+                        if (rubiusfound === true && lelyfound === true) {
+                            console.log("Se llego al final T i "+i+" v "+v.length);
+                            break;
+                        }
+                    }
+                }
+                // Buscar en la barra de bookmarks la carpeta principal de cada streamer
+                // y despues dentro buscar la carpeta de continuar o finish
+                // bokNode deberia ser la carpeta principal
+                function findMainFolder(bokNode, stre, youtubeTwitch) {
+                    let bol = false;
+                    let contFound = false;
+                    let finiFound = false;
+                    if (bokNode.title === stre.nombre && bokNode.url === undefined) {
+                        youOtwitch = youtubeTwitch;
+                        let j;
+                        const child = bokNode.children;
+                        for (j = 0; j < child.length; j+=1) {
+                            if (checkNull(contFound)) {
+                                console.log("Err contFound vacio");
+                            }
+                            if (checkNull(finiFound)) {
+                                console.log("Err finiFound vacio");
+                            }
+                            if (contFound === false) {
+                                contFound = checkNameContFin(child[j], stre, "Continuar", stre.IDcontinuar, stre.nameContinuar);
+                            }
+                            if (finiFound === false) {
+                                finiFound = checkNameContFin(child[j], stre, "Finish", stre.IDfinish, stre.nameFinish);
+                            }
+                            if (contFound === true && finiFound === true) {
+                                console.log("Se llego al final i "+i+" v "+v.length);
+                                break;
+                            }
+                        }
+                        bol = true;
+                    }
+                    return bol;
+                }
+                // Comrprobar si los ID de las carpetas coiinciden con los que yo carge
+                // en la variables, porque pueden ser diferentes(nose porque cambia)
+                // creo que cambia si renombras los bookmarks o cambias cosas
+                function checkNameContFin(bokChild, stre, cual, IDfolder, nom) {
+                    let bol = false;
+                    if (bokChild.title === nom) {
+                        if (bokChild.id !== IDfolder) {
+                            console.log("Deberia ser "+bokChild.id+" folder "+cual+" de "+stre.nombre
+                            +" pero es "+IDfolder);
+                            const op = cual === "Continuar" ? "IDcontinuar" : "IDfinish";
+                            // eslint-disable-next-line no-param-reassign
+                            stre[op] = bokChild.id;
+                        }
+                        bol = true;
+                    }
+                    return bol;
+                }
+                callb();
+            });
         });
     } catch (e) {
         console.warn(e);
     }
 }
+/**
+ * Comprobar si el video actual ya se termino de ver o tiene un punto de continuar
+ */
+function checkVideoFinish_o_Cont() {
+    if (checkNull(actualStreamer)) {
+        console.log("Err actualStreamer vacio");
+        return;
+    }
+    try {
+        if (checkNull(actualStreamer.IDcontinuar)) {
+            console.log("Error actualStreamer.IDcontinuar vacio");
+        } else {
+            chrome.bookmarks.getSubTree(actualStreamer.IDcontinuar, function (bok) {
+                const x = findbokInTree(bok);
+                checkBokContinuar(x);
+            });
+        }
+    } catch (e) {
+        console.warn(e);
+        console.log(actualStreamer);
+    }
+    try {
+        if (checkNull(actualStreamer.IDfinish)) {
+            console.log("Error actualStreamer.IDfinish vacio");
+        } else {
+            chrome.bookmarks.getSubTree(actualStreamer.IDfinish, function (bok) {
+                const x = findbokInTree(bok);
+                checkBokFinish(x);
+            });
+        }
+    } catch (e) {
+        console.warn(e);
+        console.log(actualStreamer);
+    }
+}
 async function checkRecentBok(cualStreamers) {
     let bol = true;
-    let actS1, actS2;
-    let nom1, nom2;
+    let actS1;
+    let actS2;
+    let nom1;
+    let nom2;
     if (checkNull(cualStreamers)) {
         console.log('Error cualStreamers vacio');
-        cualStreamers = "Willy";
     }
     if (cualStreamers === "Willy") {
         actS1 = willy;
         actS2 = vege;
         nom1 = "Willy";
         nom2 = "Vege";
-    }else {
+    } else {
         actS1 = lely;
         actS2 = rubius;
         nom1 = "Lely";
         nom2 = "Rubius";
     }
-    let a1, a2;
+    let a1;
+    let a2;
     try {
         a1 = await getBokLastContFinish(actS1, nom1, "streamer1");
         a2 = await getBokLastContFinish(actS2, nom2, "streamer2");
@@ -102,12 +351,27 @@ async function getBokLastContFinish(cual, nom, elem) {
         console.log('Error nom vacio');
     }
     let bolu = true;
+    let x;
+    let ac;
+    let af;
     try {
         ac = await getBokChild(cual.IDcontinuar);
         af = await getBokChild(cual.IDfinish);
-        if (parseInt(ac.id) > parseInt(af.id)) {
-            x = `<span style="color: green";>C</span> ` + '<a href='+ac.url+
-            ' style="color: blue">'+ac.title+'</a>';
+        if (checkNull(ac) || checkNull(af)) {
+            console.log("ac o af vacio");
+            console.log(cual);
+            console.log(nom);
+            return false;
+        }
+        if (checkNull(ac.id) || checkNull(af.id)) {
+            console.log("(ac o af)ID vacio");
+            console.log(cual);
+            console.log(nom);
+            return false;
+        }
+        if (parseInt(ac.id, 10) > parseInt(af.id, 10)) {
+            x = `<span style="color: green";>C</span> <a target="_blank" href="`+ac.url
+            +`"style="color: blue">`+ac.title+`</a>`;
         } else {
             x = `<span style="color: red";>F</span> ` + af.title;
         }
@@ -115,6 +379,8 @@ async function getBokLastContFinish(cual, nom, elem) {
     } catch (e) {
         bolu = false;
         console.warn(e);
+        console.log(cual);
+        console.log(nom);
         document.getElementById("streamer1").innerHTML = "Err";
     }
     return bolu;
@@ -122,24 +388,42 @@ async function getBokLastContFinish(cual, nom, elem) {
 async function getBokChild(id) {
     if (checkNull(id)) {
         console.log('Error id vacio');
+        return undefined;
     }
     let bok;
     try {
         bok = await getBokChildrenAsync(id);
+        if (checkNull(bok)) {
+            console.log('Error bok vacio');
+            return undefined;
+        }
+        if (checkNull(bok.length)) {
+            console.log('Error bok.lnegth vacio');
+            return undefined;
+        }
         bok = bok[bok.length - 1];
     } catch (e) {
         console.warn(e);
     }
     return bok;
 }
-function getBokChildrenAsync(id) {
+async function getBokChildrenAsync(id) {
     if (checkNull(id)) {
         console.log('Error id vacio');
     }
     let prom;
     try {
-        prom = new Promise(function (callb, reject) {
-            chrome.bookmarks.getChildren(id, callb);
+        prom = await new Promise(function (callb) {
+            chrome.bookmarks.getChildren(id, function (bok) {
+                if (chrome.runtime.lastError) {
+                    console.log(chrome.runtime.lastError.message);
+                }
+                if (checkNull(bok)) {
+                    console.log('Error bok vacio');
+                    console.log(id);
+                }
+                callb(bok);
+            });
         });
     } catch (e) {
         console.warn(e);
@@ -147,19 +431,20 @@ function getBokChildrenAsync(id) {
     return prom;
 }
 function findbokInTree(bok) {
-    let i, x = null;
+    let i;
+    let x = null;
     if (checkNull(bok)) {
         console.log('Error bok vacio');
     }
     let unv = bok[0].children;
-    try { 
+    try {
         unv = bok[0].children;
     } catch (e) {
         console.warn(e);
         return x;
     }
-    for (i = unv.length - 1; i >= 0; i--) {
-        if (unv[i].url == urlVideo) {
+    for (i = unv.length - 1; i >= 0; i-=1) {
+        if (unv[i].url === urlVideo) {
             x = unv[i];
             break;
         }
@@ -176,7 +461,7 @@ function checkBokContinuar(bok) {
         bol = false;
     }
     try {
-        if (bol == true) {
+        if (bol === true) {
             document.getElementById("cont").innerText = "Resfresh Continuar";
             document.getElementById("dateC").innerText = ""+bok.title.substring(0, 19);
             document.getElementById("tiemC").innerText = ""+bok.title.substring(19, 29)+" ("+bok.id+")";
@@ -185,7 +470,7 @@ function checkBokContinuar(bok) {
         } else {
             document.getElementById("cont").innerText = "Add Continuar";
         }
-    } catch(e) {
+    } catch (e) {
         console.warn(e);
     }
     refreshBokConti = bol;
@@ -243,26 +528,25 @@ function getData(cont_O_finish) {
     } catch (e) {
         console.warn(e);
     }
-    
     document.getElementById("titulo").innerText = xtit;
     document.getElementById("tiem").innerText = xtie;
     document.getElementById("canal").innerText = xcan;
     switch (xcan) {
-        case "Rubius":
-            actualStreamer = rubius;
-            break;
-        case "Alexby11":
-            actualStreamer = lely;
-            break;
-        case "Willyrex":
-            actualStreamer = willy;
-            break;
-        case "VEGETTA777":
-            actualStreamer = vege;
-            break;
-        default:
-            console.log("Sin canal ?");
-            break;
+    case "Rubius":
+        actualStreamer = rubius;
+        break;
+    case "Alexby11":
+        actualStreamer = lely;
+        break;
+    case "Willyrex":
+        actualStreamer = willy;
+        break;
+    case "VEGETTA777":
+        actualStreamer = vege;
+        break;
+    default:
+        console.log("Sin canal ?");
+        break;
     }
     let aux;
     if (cont_O_finish) {
@@ -276,32 +560,8 @@ function getData(cont_O_finish) {
     try {
         actData.titulo = aux;
         actData.url = urlVideo;
-    } catch (error) {
-        
-    }
-}
-class Streamer {
-    constructor(contin, finis) {
-        this.IDcontinuar = contin;
-        this.IDfinish = finis;
-    }
-    continuar() {
-        try {
-            if (refreshBokConti == false) {
-                crearBok(this.IDcontinuar, actData.titulo, actData.url);
-            } else {
-                chrome.bookmarks.update(IDbokcontinuar, {title: actData.titulo});
-            }
-        }catch (e) {
-            console.warn(e);
-        }
-    }
-    finish() {
-        try {
-            crearBok(this.IDfinish, actData.titulo, actData.url);
-        }catch (e) {
-            console.warn(e);
-        }
+    } catch (e) {
+        console.warn(e);
     }
 }
 function crearBok(id, tit, ur) {
@@ -311,51 +571,14 @@ function crearBok(id, tit, ur) {
         console.warn(e);
     }
 }
-const rubius = new Streamer("203", "155");
-const lely = new Streamer("88", "14");
-const willy = new Streamer("192", "11"); // 9 carpeta principal
-const vege = new Streamer("193", "36"); // 32 carpeta principal
-/**
- * true para actualizar el bookmark que deberia ser IDbokcontinuar
- * false para crear un nuevo bookmark continuar
- */
-var refreshBokConti = false;
-/**
- * El streamer actual, del cual necesito el id de la carpeta continuar y finish
- */
-var actualStreamer;
-/**
- * Titulo del video actual
- */
-var tituloVideo;
-/**
- * URL del video actual
- */
-var urlVideo;
-/**
- * El id del bookmark continuar, osea el bookmark que se guardo que tiene la informacion
- * de donde se dejo el video, porque si quiero actualizar el bookmark porque avanze en el
- * video solo necesito el id de ese bookmark
- */
-var IDbokcontinuar;
-var con = 1;
-var s = "";
-/**
- * Informacion del video actual que me dio el pedido, osea lo que me devolvio
- * el content.js al hacerle el request
- */
-var actualRequest;
-var con = 1;
-var ok = false;
-var actData = {
-    titulo: "3",
-    url: "aasd",
-};
 function request(m) {
     try {
         chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
             var acT = tabs[0];
             chrome.tabs.sendMessage(acT.id, {txt: m}, function (ped) {
+                if (chrome.runtime.lastError) {
+                    console.log(chrome.runtime.lastError.message);
+                }
                 actualRequest = ped;
             });
         });
@@ -366,89 +589,91 @@ function request(m) {
 function checkNull(valor) {
     if (valor === undefined || valor === null) {
         return true;
-    }else {
-        return false;
     }
+    return false;
 }
-function formatTi(x) {
+function formatTi(tiem) {
     // 00_13_23
+    let x = tiem;
     x = x.replaceAll(":", "_");
-    if (x.length == 8) {
+    if (x.length === 8) {
         return x;
     }
     if (x.length > 8) {
         console.log("no deberia tener mas de 8 length");
         return x;
     }
-    if (x.length == 4) {
+    if (x.length === 4) {
         return "00_0" + x;
     }
-    if (x.length == 5) {
+    if (x.length === 5) {
         return "00_" + x;
     }
-    if (x.length == 7) {
+    if (x.length === 7) {
         return "0" + x;
     }
+    return "Err";
 }
 function fromTxt(tx) {
     let n = "" + tx;
-    //(n).toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false});
-    if (n.length == 1) {
+    // (n).toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false});
+    if (n.length === 1) {
         n = "0" + n;
     }
     return n;
 }
 function dumpBookmarks() {
-    if (ok === true) {
+    if (listaEnPantalla === true) {
         console.log("Ya esta la lista de bookmarks");
-        //$("#vB").text("Ok.");
-        ok = false;
-        return;
+        // $("#vB").text("Ok.");
     } else {
-        ok = true;
-    }
-    try {
-        chrome.bookmarks.getTree(function (bookmarkTreeNodes) {
-            $("#vB").append(dumpTreeNodes(bookmarkTreeNodes));
-        });
-    } catch (e) {
-        console.warn(e);
+        listaEnPantalla = true;
+        try {
+            chrome.bookmarks.getTree(function (bookmarkTreeNodes) {
+                $("#vB").append(dumpTreeNodes(bookmarkTreeNodes));
+            });
+        } catch (e) {
+            console.warn(e);
+        }
     }
 }
 function dumpTreeNodes(bookmarkNodes) {
-    var list = $("<ul>");
-    //msg(bookmarkNodes);
-    for (var i = 0; i < bookmarkNodes.length; i++) {
+    const list = $("<ul>");
+    let i;
+    // msg(bookmarkNodes);
+    for (i = 0; i < bookmarkNodes.length; i+=1) {
         list.append(dumpNode(bookmarkNodes[i]));
-        if (i == 1) {
-            //break;
+        if (i === 1) {
+            // break;
         }
     }
     return list;
 }
 function dumpNode(bookmarkNode) {
-    if (!bookmarkNode.title) {
-        if (bookmarkNode.url) {
-            bookmarkNode.title = "vacio";
+    const bok = bookmarkNode;
+    if (!bok.title) {
+        if (bok.url) {
+            bok.title = "vacio";
         }
     }
-    if (bookmarkNode.title) {
-        var anchor = $("<a>");
-        if (!bookmarkNode.children) {
+    let anchor;
+    if (bok.title) {
+        anchor = $("<a>");
+        if (!bok.children) {
             anchor = $('<a style="color: green">');
         }
-        anchor.attr("href", bookmarkNode.url);
-        anchor.text(bookmarkNode.title);
-        var au = $('<span style="color: red;">   ' + bookmarkNode.id + "</span>");
+        anchor.attr("href", bok.url);
+        anchor.text(bok.title);
+        const au = $('<span style="color: red;">   ' + bok.id + "</span>");
         anchor.append(au);
     }
-    var li = $(bookmarkNode.title ? "<li>" : "<div>").append(anchor);
-    if (bookmarkNode.children && bookmarkNode.children.length > 0) {
-        li.append(dumpTreeNodes(bookmarkNode.children));
+    const li = $(bok.title ? "<li>" : "<div>").append(anchor);
+    if (bok.children && bok.children.length > 0) {
+        li.append(dumpTreeNodes(bok.children));
     }
     return li;
 }
-/**
+/*
  * 2021-08-31 21_57_21 V1.1
  * Funciona solo probe crear un nuevo continuar y despues actualizar ese continuar
  * y en youtube, funciona estoy muy contento tarde mucho en llegar aca, comence cerca del viernes
