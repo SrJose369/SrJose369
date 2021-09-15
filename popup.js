@@ -24,6 +24,8 @@ var IDbokcontinuar;
 var actualRequest;
 var listaEnPantalla = false;
 var youOtwitch = null;
+const showMsj = false;
+const canIrun = navigator.mediaDevices.getDisplayMedia;
 /**
  * La informacion que me dio content sobre la pagina, que deberia ser la informacion
  * del video
@@ -52,16 +54,20 @@ class Streamer {
             } else {
                 chrome.bookmarks.update(IDbokcontinuar, {title: actData.titulo});
             }
+            document.getElementById("canal").innerText = "Todo ok";
         } catch (e) {
             console.warn(e);
+            document.getElementById("canal").innerText = "Err :(";
         }
     }
 
     finish() {
         try {
             crearBok(this.IDfinish, actData.titulo, actData.url);
+            document.getElementById("canal").innerText = "Todo ok";
         } catch (e) {
             console.warn(e);
+            document.getElementById("canal").innerText = "Err :(";
         }
     }
 }
@@ -69,7 +75,7 @@ class Streamer {
 /**
  * Informacion sobre willy 9 carpeta principal
  */
-const willy = new Streamer("Willy", "111", "Viendo", "114", "WFinish 2021-06-05 20_18_39", "Y");
+const willy = new Streamer("Willy", "11", "Viendo", "14", "WFinish 2021-06-05 20_18_39", "Y");
 /**
  * Informacion sobre vege 90 carpeta principal
  */
@@ -91,26 +97,32 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("fini").addEventListener("click", finishBok);
         document.getElementById("refreData").addEventListener("click", getData);
         document.getElementById("verB").addEventListener("click", dumpBookmarks);
+        document.getElementById("screenshot").addEventListener("click", () => {
+            if (canIrun) {
+                takeScreenshot();
+            }
+        });
         chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
             const ta = tabs[0];
             urlVideo = ta.url;
             if (checkNull(urlVideo)) {
-                console.log('Error el url vacio');
+                mensaje('Error el url vacio');
             }
         });
     } catch (e) {
-        console.log(e);
+        console.warn(e);
     }
     setTimeout(() => {
         console.clear();
         let bol = false;
-        if (checkNull(urlVideo)) {
-            if (checkNull(urlVideo.length) && urlVideo.length > 13) {
-                if (urlVideo[12] === "y" || urlVideo[12] === "t") {
-                    getData(true);
-                    bol = true;
-                }
+        try {
+            if (urlVideo[12] === "y" || urlVideo[12] === "t") {
+                getData(true);
+                bol = true;
             }
+        } catch (e) {
+            // coment, no hago nada porque la pagina en la que estoy no me sirve para hacer
+            // el request de la data
         }
         if (bol === false) {
             urlVideo = "?";
@@ -145,7 +157,7 @@ async function checkExistBok() {
     } catch (e) {
         console.warn(e);
     }
-    console.log(youOtwitch);
+    mensaje(youOtwitch);
     if (youOtwitch === "Y") {
         foundBok = await checkRecentBok("Willy"); // true, encontro los bookmarks de wiily y vegeta
     }
@@ -198,7 +210,7 @@ async function isYoutube_o_Twitch() {
                             vegefound = findMainFolder(v[i], vege, "Y");
                         }
                         if (willyfound === true && vegefound === true) {
-                            console.log("Se llego al final Y i "+i+" v "+v.length);
+                            mensaje("Se llego al final Y i "+i+" v "+v.length);
                             break;
                         }
                     }
@@ -210,7 +222,7 @@ async function isYoutube_o_Twitch() {
                             lelyfound = findMainFolder(v[i], lely, "T");
                         }
                         if (rubiusfound === true && lelyfound === true) {
-                            console.log("Se llego al final T i "+i+" v "+v.length);
+                            mensaje("Se llego al final T i "+i+" v "+v.length);
                             break;
                         }
                     }
@@ -228,10 +240,10 @@ async function isYoutube_o_Twitch() {
                         const child = bokNode.children;
                         for (j = 0; j < child.length; j+=1) {
                             if (checkNull(contFound)) {
-                                console.log("Err contFound vacio");
+                                mensaje("Err contFound vacio");
                             }
                             if (checkNull(finiFound)) {
-                                console.log("Err finiFound vacio");
+                                mensaje("Err finiFound vacio");
                             }
                             if (contFound === false) {
                                 contFound = checkNameContFin(child[j], stre, "Continuar", stre.IDcontinuar, stre.nameContinuar);
@@ -240,7 +252,7 @@ async function isYoutube_o_Twitch() {
                                 finiFound = checkNameContFin(child[j], stre, "Finish", stre.IDfinish, stre.nameFinish);
                             }
                             if (contFound === true && finiFound === true) {
-                                console.log("Se llego al final i "+i+" v "+v.length);
+                                mensaje("Se llego al final i "+i+" v "+v.length);
                                 break;
                             }
                         }
@@ -255,7 +267,7 @@ async function isYoutube_o_Twitch() {
                     let bol = false;
                     if (bokChild.title === nom) {
                         if (bokChild.id !== IDfolder) {
-                            console.log("Deberia ser "+bokChild.id+" folder "+cual+" de "+stre.nombre
+                            mensaje("Deberia ser "+bokChild.id+" folder "+cual+" de "+stre.nombre
                             +" pero es "+IDfolder);
                             const op = cual === "Continuar" ? "IDcontinuar" : "IDfinish";
                             // eslint-disable-next-line no-param-reassign
@@ -277,12 +289,12 @@ async function isYoutube_o_Twitch() {
  */
 function checkVideoFinish_o_Cont() {
     if (checkNull(actualStreamer)) {
-        console.log("Err actualStreamer vacio");
+        mensaje("Err actualStreamer vacio");
         return;
     }
     try {
         if (checkNull(actualStreamer.IDcontinuar)) {
-            console.log("Error actualStreamer.IDcontinuar vacio");
+            mensaje("Error actualStreamer.IDcontinuar vacio");
         } else {
             chrome.bookmarks.getSubTree(actualStreamer.IDcontinuar, function (bok) {
                 const x = findbokInTree(bok);
@@ -291,11 +303,11 @@ function checkVideoFinish_o_Cont() {
         }
     } catch (e) {
         console.warn(e);
-        console.log(actualStreamer);
+        mensaje(actualStreamer);
     }
     try {
         if (checkNull(actualStreamer.IDfinish)) {
-            console.log("Error actualStreamer.IDfinish vacio");
+            mensaje("Error actualStreamer.IDfinish vacio");
         } else {
             chrome.bookmarks.getSubTree(actualStreamer.IDfinish, function (bok) {
                 const x = findbokInTree(bok);
@@ -304,7 +316,7 @@ function checkVideoFinish_o_Cont() {
         }
     } catch (e) {
         console.warn(e);
-        console.log(actualStreamer);
+        mensaje(actualStreamer);
     }
 }
 async function checkRecentBok(cualStreamers) {
@@ -314,7 +326,7 @@ async function checkRecentBok(cualStreamers) {
     let nom1;
     let nom2;
     if (checkNull(cualStreamers)) {
-        console.log('Error cualStreamers vacio');
+        mensaje('Error cualStreamers vacio');
     }
     if (cualStreamers === "Willy") {
         actS1 = willy;
@@ -342,13 +354,13 @@ async function checkRecentBok(cualStreamers) {
 }
 async function getBokLastContFinish(cual, nom, elem) {
     if (checkNull(cual)) {
-        console.log('Error cual vacio');
+        mensaje('Error cual vacio');
     }
     if (checkNull(nom)) {
-        console.log('Error nom vacio');
+        mensaje('Error nom vacio');
     }
     if (checkNull(elem)) {
-        console.log('Error nom vacio');
+        mensaje('Error nom vacio');
     }
     let bolu = true;
     let x;
@@ -358,15 +370,15 @@ async function getBokLastContFinish(cual, nom, elem) {
         ac = await getBokChild(cual.IDcontinuar);
         af = await getBokChild(cual.IDfinish);
         if (checkNull(ac) || checkNull(af)) {
-            console.log("ac o af vacio");
-            console.log(cual);
-            console.log(nom);
+            mensaje("ac o af vacio");
+            mensaje(cual);
+            mensaje(nom);
             return false;
         }
         if (checkNull(ac.id) || checkNull(af.id)) {
-            console.log("(ac o af)ID vacio");
-            console.log(cual);
-            console.log(nom);
+            mensaje("(ac o af)ID vacio");
+            mensaje(cual);
+            mensaje(nom);
             return false;
         }
         if (parseInt(ac.id, 10) > parseInt(af.id, 10)) {
@@ -379,26 +391,26 @@ async function getBokLastContFinish(cual, nom, elem) {
     } catch (e) {
         bolu = false;
         console.warn(e);
-        console.log(cual);
-        console.log(nom);
+        mensaje(cual);
+        mensaje(nom);
         document.getElementById("streamer1").innerHTML = "Err";
     }
     return bolu;
 }
 async function getBokChild(id) {
     if (checkNull(id)) {
-        console.log('Error id vacio');
+        mensaje('Error id vacio');
         return undefined;
     }
     let bok;
     try {
         bok = await getBokChildrenAsync(id);
         if (checkNull(bok)) {
-            console.log('Error bok vacio');
+            mensaje('Error bok vacio');
             return undefined;
         }
         if (checkNull(bok.length)) {
-            console.log('Error bok.lnegth vacio');
+            mensaje('Error bok.lnegth vacio');
             return undefined;
         }
         bok = bok[bok.length - 1];
@@ -409,18 +421,18 @@ async function getBokChild(id) {
 }
 async function getBokChildrenAsync(id) {
     if (checkNull(id)) {
-        console.log('Error id vacio');
+        mensaje('Error id vacio');
     }
     let prom;
     try {
         prom = await new Promise(function (callb) {
             chrome.bookmarks.getChildren(id, function (bok) {
                 if (chrome.runtime.lastError) {
-                    console.log(chrome.runtime.lastError.message);
+                    mensaje(chrome.runtime.lastError.message);
                 }
                 if (checkNull(bok)) {
-                    console.log('Error bok vacio');
-                    console.log(id);
+                    mensaje('Error bok vacio');
+                    mensaje(id);
                 }
                 callb(bok);
             });
@@ -434,7 +446,7 @@ function findbokInTree(bok) {
     let i;
     let x = null;
     if (checkNull(bok)) {
-        console.log('Error bok vacio');
+        mensaje('Error bok vacio');
     }
     let unv = bok[0].children;
     try {
@@ -454,7 +466,7 @@ function findbokInTree(bok) {
 function checkBokContinuar(bok) {
     let bol = true;
     if (bok === undefined) {
-        console.log('Error bok vacio');
+        mensaje('Error bok vacio');
     }
     if (bok === null) { // si bok es null es porque no encontre el bookmark, ose que
         // toadavia no se guardo un continuar
@@ -519,14 +531,15 @@ function getData(cont_O_finish) {
     let xtit = "?";
     let xcan = "?";
     if (checkNull(actualRequest)) {
-        console.log("Vacio actualRequest " + actualRequest);
-    }
-    try {
-        xtit = actualRequest.titu;
-        xtie = actualRequest.tiem;
-        xcan = actualRequest.canal;
-    } catch (e) {
-        console.warn(e);
+        mensaje("Vacio actualRequest " + actualRequest);
+    } else {
+        try {
+            xtit = actualRequest.titu;
+            xtie = actualRequest.tiem;
+            xcan = actualRequest.canal;
+        } catch (e) {
+            console.warn(e);
+        }
     }
     document.getElementById("titulo").innerText = xtit;
     document.getElementById("tiem").innerText = xtie;
@@ -545,7 +558,7 @@ function getData(cont_O_finish) {
         actualStreamer = vege;
         break;
     default:
-        console.log("Sin canal ?");
+        mensaje("Sin canal ?");
         break;
     }
     let aux;
@@ -555,7 +568,7 @@ function getData(cont_O_finish) {
         aux = actDate() + " " + xtit;
     }
     if (checkNull(actData)) {
-        console.log('Error acDtata vacio');
+        mensaje('Error acDtata vacio');
     }
     try {
         actData.titulo = aux;
@@ -571,19 +584,78 @@ function crearBok(id, tit, ur) {
         console.warn(e);
     }
 }
+const takeScreenshot = async () => {
+    console.clear();
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+            displaySurface: "window",
+            resizeMode: "none",
+            logicalSurface: true,
+        },
+    });
+    // get correct video track
+    //applyConstraints(constraints)
+    const track = stream.getVideoTracks()[0];
+    // init Image Capture and not Video stream
+    const img = new ImageCapture(track);
+    setTimeout(async () => {
+        // take first frame only
+        const bitmap = await img.grabFrame();
+        // destory video track to prevent more recording / mem leak
+        track.stop();
+        const canvas = document.getElementById('canva');
+        // this could be a document.createElement('canvas') if you want
+        // draw weird image type to canvas so we can get a useful image
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        const context = canvas.getContext('2d');
+        context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
+        const image = canvas.toDataURL();
+        // this turns the base 64 string to a [File] object
+        const res = await fetch(image);
+        const buff = await res.arrayBuffer();
+        // clone so we can rename, and put into array for easy proccessing
+        writeFile(await getNewFileHandle(), buff);
+    }, 500);
+};
+async function getNewFileHandle() {
+    const options = {
+        suggestedName: `${actDate()}.jpg`,
+        startIn: 'pictures',
+        /*types: [{
+            description: 'Text Files',
+            accept: {'text/plain': ['.txt']},
+        }],*/
+    };
+    const handle = await window.showSaveFilePicker(options);
+    return handle;
+}
+async function writeFile(fileHandle, contents) {
+    // Create a FileSystemWritableFileStream to write to.
+    const writable = await fileHandle.createWritable();
+    // Write the contents of the file to the stream.
+    await writable.write(contents);
+    // Close the file and write the contents to disk.
+    await writable.close();
+}
 function request(m) {
     try {
         chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
             var acT = tabs[0];
             chrome.tabs.sendMessage(acT.id, {txt: m}, function (ped) {
                 if (chrome.runtime.lastError) {
-                    console.log(chrome.runtime.lastError.message);
+                    mensaje(chrome.runtime.lastError.message);
                 }
                 actualRequest = ped;
             });
         });
     } catch (e) {
         console.warn(e);
+    }
+}
+function mensaje(ms) {
+    if (showMsj === true) {
+        mensaje(ms);
     }
 }
 function checkNull(valor) {
@@ -600,7 +672,7 @@ function formatTi(tiem) {
         return x;
     }
     if (x.length > 8) {
-        console.log("no deberia tener mas de 8 length");
+        mensaje("no deberia tener mas de 8 length");
         return x;
     }
     if (x.length === 4) {
@@ -624,7 +696,7 @@ function fromTxt(tx) {
 }
 function dumpBookmarks() {
     if (listaEnPantalla === true) {
-        console.log("Ya esta la lista de bookmarks");
+        mensaje("Ya esta la lista de bookmarks");
         // $("#vB").text("Ok.");
     } else {
         listaEnPantalla = true;

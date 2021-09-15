@@ -38,6 +38,10 @@
         "no-multi-spaces": "warn",
         "comma-spacing": "warn",
         "no-plusplus": "warn",
-        "max-len": 0
+        "max-len": 0,
+        "no-trailing-spaces": "warn",
+        "no-confusing-arrow": 0,
+        "no-multi-assign": 0
+        
     }
 }
