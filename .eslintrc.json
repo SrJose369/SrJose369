@@ -16,7 +16,7 @@
     "rules": {
         "quotes": "off",
         "prefer-arrow-callback": "off",
-        "indent": ["error", 4],
+        "indent": ["error", "tab"],
         "no-console": "off",
         "linebreak-style": ["warn", "unix"],
         "prefer-template": "off",
@@ -41,7 +41,9 @@
         "max-len": 0,
         "no-trailing-spaces": "warn",
         "no-confusing-arrow": 0,
-        "no-multi-assign": 0
-        
+        "no-multi-assign": 0,
+		"no-tabs": 0,
+		"no-continue": 0,
+		"no-else-return": 0
     }
 }
